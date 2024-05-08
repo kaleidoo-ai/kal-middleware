@@ -19,29 +19,29 @@ class JwtMiddleware(BaseHTTPMiddleware):
             try:
                 decoded_token = firebase_admin.auth.verify_id_token(token)
             except Exception as e:
-                return Response(status=403, response=f"Error with authentication: {e}")
+                return Response(status_code=403, content=f"Error with authentication: {e}")
         else:
-            return Response(status=401, response="Error, token not found.")
+            return Response(status_code=401, content="Error, token not found.")
 
         service = request.path_params.get("service")
         action = request.path_params.get("action")
         if service not in self.config_map:
-            return Response(status=404, response=f"Service {service} not found.")
+            return Response(status_code=404, content=f"Service {service} not found.")
         if action not in self.config_map[service]:
-            return Response(status=404, response=f"Action {action} not found in service {service}.")
+            return Response(status_code=404, content=f"Action {action} not found in service {service}.")
 
         user_uid = decoded_token["uid"]
         permissions = self.config_map[service][action]["permissions"]
         user_role = await self.user_role_function(user_uid)
 
         if user_role not in permissions:
-            return Response(status=403, response=f"User not permitted to call {service}/{action}.")
+            return Response(status_code=403, content=f"User not permitted to call {service}/{action}.")
 
         if request.method in ["POST", "PUT"]:
             if self.check_id_access:
                 body = await request.json()
                 if not self.check_id_access(user_uid, body):
-                    return Response(status=403, response="User not permitted to perform this action.")
+                    return Response(status_code=403, content="User not permitted to perform this action.")
 
         request.state.uid = user_uid  # Attach the Firebase id to the request state for later use.
 
