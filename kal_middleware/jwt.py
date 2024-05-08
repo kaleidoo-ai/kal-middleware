@@ -4,13 +4,14 @@ from fastapi import Request
 from starlette.responses import Response
 import firebase_admin
 from firebase_admin import auth
+from typing import Callable, Optional, Dict, Any
 
 default_app = firebase_admin.initialize_app()
 
 def jwt_authenticated(
-    get_user_role_function,
-    config_map,
-    check_id_access=None,
+    get_user_role_function: Callable[[str], Any],
+    config_map: Dict[str, Dict[str, Dict[str, list]]],
+    check_id_access: Optional[Callable[[str, Any], bool]] = None,
 ):
     def decorator(func: Callable) -> Callable:
         @wraps(func)
