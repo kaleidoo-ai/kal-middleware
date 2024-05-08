@@ -11,7 +11,7 @@ default_app = firebase_admin.initialize_app()
 def jwt_authenticated(
     get_user_role_function: Callable[[str], Any],
     config_map: Dict[str, Dict[str, Dict[str, list]]],
-    check_id_access: Optional[Callable[[str, Any], bool]] = None,
+    check_access: Optional[Callable[[str, Any], bool]] = None,
 ):
     def decorator(func: Callable) -> Callable:
         @wraps(func)
@@ -55,9 +55,9 @@ def jwt_authenticated(
 
             # if the request has body and there is a need to verify the user access to the elements - verify it
             if request.method in ["POST", "PUT"]:
-                if check_id_access:
+                if check_access:
                     body = await request.json()
-                    if not check_id_access(user_uid, body):
+                    if not check_access(user_uid, body):
                         return Response(
                             status_code=403,
                             content="User not permitted to perform this action.",

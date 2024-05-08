@@ -44,8 +44,18 @@ config_map = {
     }
 }
 
+# if there is specific variable in the body that needed checks of who access its data only
+def check_access(firebase_uid, body):
+    # check in the db the user and his parameters
+    # for example if in the db the user with that exactly firebase_uid is:
+    user = {
+        "firebase_uid": "12345",
+        "org_id": "12345"
+    }
+    return body["org_id"] == user["org_id"]
+
 @app.get("/your-route")
-@jwt_authenticated(get_user_role_function, config_map)
+@jwt_authenticated(get_user_role_function, config_map, check_access)
 async def your_route_function():
     # Your route logic
     return {"message": "This is a protected route"}
