@@ -1,2 +1,3 @@
 firebase_admin
 fastapi
+google-auth
