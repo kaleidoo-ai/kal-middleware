@@ -1,6 +1,5 @@
-from typing import Callable
 from functools import wraps
-from fastapi import Request
+from fastapi import Request, status
 from starlette.responses import Response
 import firebase_admin
 from firebase_admin import auth
@@ -24,21 +23,21 @@ def jwt_authenticated(
                     decoded_token = auth.verify_id_token(token)
                 except Exception as e:
                     return Response(
-                        status_code=403, content=f"Error with authentication: {e}"
+                        status_code=status.HTTP_403_FORBIDDEN, content=f"Error with authentication: {e}"
                     )
             else:
-                return Response(status_code=401, content="Error, token not found.")
+                return Response(status_code=status.HTTP_401_UNAUTHORIZED, content="Error, token not found.")
 
             # verify that the service and action exists in the config map
             service = request.path_params.get("service")
             action = request.path_params.get("action")
             if service not in config_map:
                 return Response(
-                    status_code=404, content=f"Service {service} not found."
+                    status_code=status.HTTP_404_NOT_FOUND, content=f"Service {service} not found."
                 )
             if action not in config_map[service]:
                 return Response(
-                    status_code=404,
+                    status_code=status.HTTP_404_NOT_FOUND,
                     content=f"Action {action} not found in service {service}.",
                 )
 
@@ -49,7 +48,7 @@ def jwt_authenticated(
 
             if user_role not in permissions:
                 return Response(
-                    status_code=403,
+                    status_code=status.HTTP_403_FORBIDDEN,
                     content=f"User not permitted to call {service}/{action}.",
                 )
 
@@ -59,7 +58,7 @@ def jwt_authenticated(
                     body = await request.json()
                     if not check_access(user_uid, body):
                         return Response(
-                            status_code=403,
+                            status_code=status.HTTP_403_FORBIDDEN,
                             content="User not permitted to perform this action.",
                         )
 

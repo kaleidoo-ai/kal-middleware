@@ -1,30 +1,43 @@
-from typing import Callable
-from functools import wraps
-from fastapi import Request
-from starlette.responses import Response
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from google.auth.transport import requests
-from google.oauth2 import id_token
 
+from fastapi import Request, Response, status
+from fastapi.security import HTTPBearer
+import google.auth.transport.requests
+import google.oauth2.id_token
+from functools import wraps
+from . import get_env_var
+
+HTTP_REQUEST = google.auth.transport.requests.Request()
 security = HTTPBearer()
 
-def sts_authenticated(func: Callable) -> Callable:
-    """Use the service to service authentication to parse Authorization header to verify the
-    The server extracts the Identity Platform uid for that user.
-    """
+def get_allowed_accounts():
+    allowed_accounts = get_env_var("ALLOWED_SERVICE_ACCOUNTS", "")
+    return [acc.strip() for acc in allowed_accounts.split(",")]
+
+def sts_authenticated(func):
     @wraps(func)
     async def decorated_function(*args, **kwargs):
-        credentials: HTTPAuthorizationCredentials = await security(kwargs.get("request"))
-        scheme, token = credentials.credentials.split()
-        if scheme.lower() != "bearer":
-            return Response(status_code=401, content="Invalid authentication scheme.")
+        allowed_accounts_list = get_allowed_accounts()
+
+        request: Request = kwargs.get("request")
+        header = request.headers.get("Authorization", None)
+
+        if header is None:
+            return Response(status_code=status.HTTP_401_UNAUTHORIZED)
+
+        auth_type, token = header.split(" ", 1)
+        if auth_type.lower() != "bearer":
+            return Response(status_code=status.HTTP_401_UNAUTHORIZED)
+
         try:
-            claims = await id_token.verify_token(token, requests.Request())
-            if not claims.get("email_verified", False):
-                return Response(status_code=401, content="Email not verified.")
-            else:
-                # can add more logic to validate the service
-                return await func(*args, **kwargs)
-        except Exception as e:
-            return Response(status_code=403, content=f"Error with authentication: {e}")
+            id_info = google.oauth2.id_token.verify_oauth2_token(token, HTTP_REQUEST)
+
+            if id_info.get("email") not in allowed_accounts_list:
+                return Response(status_code=status.HTTP_403_FORBIDDEN)
+
+            return await func(*args, **kwargs)
+        except ValueError as e:
+            print(e)
+            return Response(status_code=status.HTTP_403_FORBIDDEN)
+
     return decorated_function
+
