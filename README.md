@@ -65,7 +65,7 @@ async def your_route_function():
 For service-to-service (STS) authentication using Google's Identity Platform, you can use the `sts_authenticated` decorator. This ensures that the calling service's token is verified to enable secure interactions between services.
 
 Here's how to use the `sts_authenticated` decorator in your FastAPI app:
-
+- Make sure first you have env variable named `ALLOWED_SERVICE_ACCOUNTS` with the following structure: `example1@.gserviceaccount.com, example2@.gserviceaccount.com`
 ```python
 from kal_middleware.sts import sts_authenticated
 

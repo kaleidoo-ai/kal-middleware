@@ -46,6 +46,12 @@ def jwt_authenticated(
             permissions = config_map[service][action]["permissions"]
             user_role = await get_user_role_function(user_uid)
 
+            if not user_role:
+                return Response(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    content=f"User not exist.",
+                )
+
             if user_role not in permissions:
                 return Response(
                     status_code=status.HTTP_403_FORBIDDEN,
