@@ -3,13 +3,13 @@ from fastapi import Request, status
 from starlette.responses import Response
 import firebase_admin
 from firebase_admin import auth
-from typing import Callable, Optional, Dict, Any
+from typing import Callable, Optional, Dict, Any, List, Union
 
 default_app = firebase_admin.initialize_app()
 
 def jwt_authenticated(
     get_user_role_function: Callable[[str], Any],
-    config_map: Dict[str, Dict[str, Dict[str, list]]],
+    config_map: Dict[str, Dict[str, Union[str, Dict[str, Dict[str, List[str]]]]]],
     check_access: Optional[Callable[[str, Any], bool]] = None,
 ):
     def decorator(func: Callable) -> Callable:
@@ -35,7 +35,7 @@ def jwt_authenticated(
                 return Response(
                     status_code=status.HTTP_404_NOT_FOUND, content=f"Service {service} not found."
                 )
-            if action not in config_map[service]:
+            if action not in config_map[service]["actions"]:
                 return Response(
                     status_code=status.HTTP_404_NOT_FOUND,
                     content=f"Action {action} not found in service {service}.",
@@ -43,7 +43,7 @@ def jwt_authenticated(
 
             # verify that the user has the permission to execute the request
             user_uid = decoded_token["uid"]
-            permissions = config_map[service][action]["permissions"]
+            permissions = config_map[service]["actions"][action]["permissions"]
             user_role = await get_user_role_function(user_uid)
 
             if not user_role:

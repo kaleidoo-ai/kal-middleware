@@ -39,8 +39,11 @@ def get_user_role_function(user_id: str):
 # Define a configuration map specifying services, actions, and required permissions
 config_map = {
     "service": {
-        "action": {
-            "permissions": ["user_role", "admin_role"]
+        "url": "service_url",
+        "actions": {
+            "example": {
+                "permissions": ["user_role", "admin_role"]
+            }
         }
     }
 }
