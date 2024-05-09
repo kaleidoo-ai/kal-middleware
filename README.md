@@ -62,7 +62,7 @@ async def your_route_function():
     return {"message": "This is a protected route"}
 ```
 
-### STS Authentication
+## STS Authentication
 For service-to-service (STS) authentication using Google's Identity Platform, you can use the `sts_authenticated` decorator. This ensures that the calling service's token is verified to enable secure interactions between services.
 
 Here's how to use the `sts_authenticated` decorator in your FastAPI app:
