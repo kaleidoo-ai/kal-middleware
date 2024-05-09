@@ -33,6 +33,7 @@ from kal_middleware.jwt import jwt_authenticated
 # Define a function to retrieve the user's role based on their user ID
 def get_user_role_function(user_id: str):
     # Implement your logic to retrieve the user's role
+    # If the user not found, return "".
     return "user_role"
 
 # Define a configuration map specifying services, actions, and required permissions
