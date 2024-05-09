@@ -58,9 +58,13 @@ def check_access(firebase_uid, body):
     }
     return body["org_id"] == user["org_id"]
 
-@app.get("/your-route")
+@app.get("/your-route/<service>/<action>")
 @jwt_authenticated(get_user_role_function, config_map, check_access)
-async def your_route_function():
+async def your_route_function(
+        request: Request = None,
+        service: Union[str, None] = None,
+        action: Union[str, None] = None
+):
     # Your route logic
     return {"message": "This is a protected route"}
 ```

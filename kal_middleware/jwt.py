@@ -29,8 +29,8 @@ def jwt_authenticated(
                 return Response(status_code=status.HTTP_401_UNAUTHORIZED, content="Error, token not found.")
 
             # verify that the service and action exists in the config map
-            service = request.path_params.get("service")
-            action = request.path_params.get("action")
+            service = kwargs.get('service')
+            action = kwargs.get('action')
             if service not in config_map:
                 return Response(
                     status_code=status.HTTP_404_NOT_FOUND, content=f"Service {service} not found."
