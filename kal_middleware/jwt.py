@@ -3,13 +3,13 @@ from fastapi import Request, status
 from starlette.responses import Response
 import firebase_admin
 from firebase_admin import auth
-from typing import Callable, Optional, Dict, Any, List, Union
+from typing import Callable, Optional, Dict, Any, Set, Union
 
 default_app = firebase_admin.initialize_app()
 
-def jwt_authenticated(
-    get_user_role_function: Callable[[str], Any],
-    config_map: Dict[str, Dict[str, Union[str, Dict[str, Dict[str, List[str]]]]]],
+def firebase_jwt_authenticated(
+    get_user_capabilities: Callable[[str], Any],
+    config_map: Dict[str, Dict[str, Union[str, Set[str]]]],
     check_access: Optional[Callable[[str, Any], bool]] = None,
 ):
     def decorator(func: Callable) -> Callable:
@@ -43,19 +43,15 @@ def jwt_authenticated(
 
             # verify that the user has the permission to execute the request
             user_uid = decoded_token["uid"]
-            permissions = config_map[service]["actions"][action]["permissions"]
-            user_role = await get_user_role_function(user_uid)
+            user_capabilities = await get_user_capabilities(user_uid)
+            access = any(
+                capability["service"] == service and capability["action"] == action for capability in user_capabilities
+            )
 
-            if not user_role:
-                return Response(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    content=f"User not exist.",
-                )
-
-            if user_role not in permissions:
+            if not access:
                 return Response(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    content=f"User not permitted to call {service}/{action}.",
+                    content=f"The user cannot access {service}/{action}."
                 )
 
             # if the request has body and there is a need to verify the user access to the elements - verify it
@@ -77,3 +73,6 @@ def jwt_authenticated(
         return decorated_function
 
     return decorator
+
+
+

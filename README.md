@@ -2,7 +2,6 @@
 
 
 [![image](https://img.shields.io/pypi/v/kal-middleware.svg)](https://pypi.python.org/pypi/kal-middleware)
-[![image](https://img.shields.io/conda/vn/conda-forge/kal-middleware.svg)](https://anaconda.org/conda-forge/kal-middleware)
 
 `kal-middleware` is a Python package designed for FastAPI applications to provide robust JWT and Service-to-Service (STS) authentication using Firebase and Google Identity Platform.
 
@@ -28,22 +27,27 @@ To add JWT authentication to your FastAPI endpoints, you can use the `jwt_authen
 Here's an example of how to apply the `jwt_authenticated` decorator:
 
 ```python
-from kal_middleware.jwt import jwt_authenticated
+from kal_middleware.jwt import firebase_jwt_authenticated
 
 # Define a function to retrieve the user's role based on their user ID
-def get_user_role_function(user_id: str):
-    # Implement your logic to retrieve the user's role
+def get_user_capabilities(user_id: str):
+    # Implement your logic to retrieve the user's capabilities
     # If the user not found, return "".
-    return "user_role"
+
+    # Example - the user can access the get action in example service only.
+    example_capabilities = {
+        "service": "example_service",
+        "action": "get"
+    }
+    return example_capabilities
 
 # Define a configuration map specifying services, actions, and required permissions
 config_map = {
-    "service": {
+    "example_service": {
         "url": "service_url",
         "actions": {
-            "example": {
-                "permissions": ["user_role", "admin_role"]
-            }
+            "get",
+            "get_all"
         }
     }
 }
@@ -59,8 +63,19 @@ def check_access(firebase_uid, body):
     return body["org_id"] == user["org_id"]
 
 @app.get("/your-route/<service>/<action>")
-@jwt_authenticated(get_user_role_function, config_map, check_access)
+@firebase_jwt_authenticated(get_user_capabilities, config_map, check_access)
 async def your_route_function(
+        request: Request = None,
+        service: Union[str, None] = None,
+        action: Union[str, None] = None
+):
+    # Your route logic
+    return {"message": "This is a protected route"}
+
+# Or - if there is no need to check for specific data in the body
+@app.get("/your-route-without-check-access/<service>/<action>")
+@firebase_jwt_authenticated(get_user_capabilities, config_map)
+async def your_route_function_without_check_access(
         request: Request = None,
         service: Union[str, None] = None,
         action: Union[str, None] = None
