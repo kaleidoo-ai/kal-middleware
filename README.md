@@ -52,7 +52,7 @@ def check_access(firebase_uid: str, body: dict, user_capabilities_list: List):
     # check in the db the user and his parameters
     # for example if in the db the user with that exactly firebase_uid is:
     user = {
-        "user_id": "333444",
+        "id": "333444",
         "firebase_uid": "12345",
         "org_id": "12345"
     }

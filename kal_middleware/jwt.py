@@ -3,13 +3,13 @@ from fastapi import Request, status
 from starlette.responses import Response
 import firebase_admin
 from firebase_admin import auth
-from typing import Callable, Optional, Any, Awaitable
+from typing import Callable, Optional, Any, Awaitable, Tuple
 
 default_app = firebase_admin.initialize_app()
 
 def firebase_jwt_authenticated(
     get_user_capabilities: Callable[[str], Any],
-    check_access: Optional[Callable[[str, Any, list], Awaitable[bool, dict]]] = None,
+    check_access: Optional[Callable[[str, Any, list], Awaitable[Tuple[bool, dict]]]] = None,
 ):
     def decorator(func: Callable) -> Callable:
         @wraps(func)
