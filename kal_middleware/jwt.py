@@ -3,13 +3,13 @@ from fastapi import Request, status
 from starlette.responses import Response
 import firebase_admin
 from firebase_admin import auth
-from typing import Callable, Optional, Any, List
+from typing import Callable, Optional, Any, Awaitable
 
 default_app = firebase_admin.initialize_app()
 
 def firebase_jwt_authenticated(
     get_user_capabilities: Callable[[str], Any],
-    check_access: Optional[Callable[[str, Any, list], bool]] = None,
+    check_access: Optional[Callable[[str, Any, list], Awaitable[bool]]] = None,
 ):
     def decorator(func: Callable) -> Callable:
         @wraps(func)
@@ -48,7 +48,7 @@ def firebase_jwt_authenticated(
             if request.method in ["POST", "PUT"]:
                 if check_access:
                     body = await request.json()
-                    if not check_access(user_uid, body, user_capabilities):
+                    if not await check_access(user_uid, body, user_capabilities):
                         return Response(
                             status_code=status.HTTP_403_FORBIDDEN,
                             content="User not permitted to perform this action.",
