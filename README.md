@@ -15,7 +15,7 @@
 Install `kal-middleware` using pip:
 
 ```bash
-pip install kal_middleware
+pip install kal-middleware
 ```
 
 # Usage
