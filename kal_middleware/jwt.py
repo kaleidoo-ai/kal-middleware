@@ -3,14 +3,13 @@ from fastapi import Request, status
 from starlette.responses import Response
 import firebase_admin
 from firebase_admin import auth
-from typing import Callable, Optional, Dict, Any, Set, Union
+from typing import Callable, Optional, Any, List
 
 default_app = firebase_admin.initialize_app()
 
 def firebase_jwt_authenticated(
     get_user_capabilities: Callable[[str], Any],
-    config_map: Dict[str, Dict[str, Union[str, Set[str]]]],
-    check_access: Optional[Callable[[str, Any], bool]] = None,
+    check_access: Optional[Callable[[str, Any, list], bool]] = None,
 ):
     def decorator(func: Callable) -> Callable:
         @wraps(func)
@@ -31,15 +30,6 @@ def firebase_jwt_authenticated(
             # verify that the service and action exists in the config map
             service = kwargs.get('service')
             action = kwargs.get('action')
-            if service not in config_map:
-                return Response(
-                    status_code=status.HTTP_404_NOT_FOUND, content=f"Service {service} not found."
-                )
-            if action not in config_map[service]["actions"]:
-                return Response(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    content=f"Action {action} not found in service {service}.",
-                )
 
             # verify that the user has the permission to execute the request
             user_uid = decoded_token["uid"]
@@ -58,13 +48,14 @@ def firebase_jwt_authenticated(
             if request.method in ["POST", "PUT"]:
                 if check_access:
                     body = await request.json()
-                    if not check_access(user_uid, body):
+                    if not check_access(user_uid, body, user_capabilities):
                         return Response(
                             status_code=status.HTTP_403_FORBIDDEN,
                             content="User not permitted to perform this action.",
                         )
 
             request.state.uid = user_uid  # Attach the Firebase id to the request state for later use.
+            request.state.user_capabilities = user_capabilities
 
             # Process the request
             response = await func(request, *args, **kwargs)

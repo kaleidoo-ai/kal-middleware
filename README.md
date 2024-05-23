@@ -28,6 +28,7 @@ Here's an example of how to apply the `jwt_authenticated` decorator:
 
 ```python
 from kal_middleware.jwt import firebase_jwt_authenticated
+from typing import List
 
 # Define a function to retrieve the user's role based on their user ID
 def get_user_capabilities(user_id: str):
@@ -35,25 +36,14 @@ def get_user_capabilities(user_id: str):
     # If the user not found, return "".
 
     # Example - the user can access the get action in example service only.
-    example_capabilities = {
+    example_capabilities = [{
         "service": "example_service",
         "action": "get"
-    }
+    }]
     return example_capabilities
 
-# Define a configuration map specifying services, actions, and required permissions
-config_map = {
-    "example_service": {
-        "url": "service_url",
-        "actions": {
-            "get",
-            "get_all"
-        }
-    }
-}
-
 # if there is specific variable in the body that needed checks of who access its data only
-def check_access(firebase_uid, body):
+def check_access(firebase_uid: str, body: dict, user_capabilities_list: List):
     # check in the db the user and his parameters
     # for example if in the db the user with that exactly firebase_uid is:
     user = {
@@ -63,7 +53,7 @@ def check_access(firebase_uid, body):
     return body["org_id"] == user["org_id"]
 
 @app.get("/your-route/<service>/<action>")
-@firebase_jwt_authenticated(get_user_capabilities, config_map, check_access)
+@firebase_jwt_authenticated(get_user_capabilities, check_access)
 async def your_route_function(
         request: Request = None,
         service: Union[str, None] = None,
