@@ -24,7 +24,12 @@ pip install kal-middleware
 
 To add JWT authentication to your FastAPI endpoints, you can use the `jwt_authenticated` decorator provided by `kal-middleware`. This decorator checks if the JWT token in the `Authorization` header is valid and whether the user has the appropriate role based on a configuration map.
 
-Here's an example of how to apply the `jwt_authenticated` decorator:
+Here's an example of how to apply the `firebase_jwt_authenticated` decorator:
+
+**Notice:** After the JWT is processed, the `request.state` holds:
+1. `user_uid` - The Firebase unique ID.
+2. `user_capabilities` - A list of capabilities for later use in the request processing, if needed.
+3. `user` - If `check_access` is used, the user object will be attached to the request, so the entire process does not need to call the request again.
 
 ```python
 from kal_middleware.jwt import firebase_jwt_authenticated
