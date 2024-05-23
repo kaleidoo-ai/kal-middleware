@@ -52,7 +52,7 @@ def check_access(firebase_uid: str, body: dict, user_capabilities_list: List):
         "org_id": "12345"
     }
     if body["org_id"] == user["org_id"]:
-        return True, user.get("user_id")
+        return True, user
     return False, None
 
 @app.get("/your-route/<service>/<action>")
@@ -67,7 +67,7 @@ async def your_route_function(
 
 # Or - if there is no need to check for specific data in the body
 @app.get("/your-route-without-check-access/<service>/<action>")
-@firebase_jwt_authenticated(get_user_capabilities, config_map)
+@firebase_jwt_authenticated(get_user_capabilities)
 async def your_route_function_without_check_access(
         request: Request = None,
         service: Union[str, None] = None,

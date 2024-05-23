@@ -9,7 +9,7 @@ default_app = firebase_admin.initialize_app()
 
 def firebase_jwt_authenticated(
     get_user_capabilities: Callable[[str], Any],
-    check_access: Optional[Callable[[str, Any, list], Awaitable[bool, str]]] = None,
+    check_access: Optional[Callable[[str, Any, list], Awaitable[bool, dict]]] = None,
 ):
     def decorator(func: Callable) -> Callable:
         @wraps(func)
@@ -30,7 +30,7 @@ def firebase_jwt_authenticated(
             # verify that the service and action exists in the config map
             service = kwargs.get('service')
             action = kwargs.get('action')
-            user_id = None
+            user = None
 
             # verify that the user has the permission to execute the request
             user_uid = decoded_token["uid"]
@@ -49,7 +49,7 @@ def firebase_jwt_authenticated(
             if request.method in ["POST", "PUT"]:
                 if check_access:
                     body = await request.json()
-                    access, user_id = await check_access(user_uid, body, user_capabilities)
+                    access, user  = await check_access(user_uid, body, user_capabilities)
                     if not access:
                         return Response(
                             status_code=status.HTTP_403_FORBIDDEN,
@@ -57,8 +57,8 @@ def firebase_jwt_authenticated(
                         )
 
             request.state.uid = user_uid  # Attach the Firebase id to the request state for later use.
-            if user_id:
-                request.state.user_id = user_id
+            if user:
+                request.state.user = user
             request.state.user_capabilities = user_capabilities
 
             # Process the request
