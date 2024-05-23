@@ -47,10 +47,13 @@ def check_access(firebase_uid: str, body: dict, user_capabilities_list: List):
     # check in the db the user and his parameters
     # for example if in the db the user with that exactly firebase_uid is:
     user = {
+        "user_id": "333444",
         "firebase_uid": "12345",
         "org_id": "12345"
     }
-    return body["org_id"] == user["org_id"]
+    if body["org_id"] == user["org_id"]:
+        return True, user.get("user_id")
+    return False, None
 
 @app.get("/your-route/<service>/<action>")
 @firebase_jwt_authenticated(get_user_capabilities, check_access)
