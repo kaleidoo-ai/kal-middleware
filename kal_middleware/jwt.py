@@ -53,7 +53,7 @@ def firebase_jwt_authenticated(
                     if not access:
                         return Response(
                             status_code=status.HTTP_403_FORBIDDEN,
-                            content="User not permitted to perform this action.",
+                            content=f"User not permitted to perform this action. reason: {user}",
                         )
 
             request.state.uid = user_uid  # Attach the Firebase id to the request state for later use.

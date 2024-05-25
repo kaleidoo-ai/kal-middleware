@@ -58,7 +58,7 @@ def check_access(firebase_uid: str, body: dict, user_capabilities_list: List):
     }
     if body["org_id"] == user["org_id"]:
         return True, user
-    return False, None
+    return False, f"User {user.get('id')} from another organization then the one that was requested."
 
 @app.get("/your-route/<service>/<action>")
 @firebase_jwt_authenticated(get_user_capabilities, check_access)
