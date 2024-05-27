@@ -36,7 +36,7 @@ def firebase_jwt_authenticated(
             # verify that the user has the permission to execute the request
             user_uid = decoded_token["uid"]
             user = await get_user_by_fb_uid(user_uid)
-            capabilities = user.get("capabilities")
+            capabilities = [capability.get("id") for capability in user.get("capabilities")]
             capability = await get_capability(service, action)
             access = capability and capability.get("id") in capabilities
 
