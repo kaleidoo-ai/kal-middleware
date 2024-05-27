@@ -48,7 +48,7 @@ async def check_access(user: dict, body: dict):
     if "capability_id" in body:
         access =  any(capability for capability in capabilities if capability.get("id") == body["capability_id"] )
         if not access:
-            return False, f"User cant access the request."
+            return False, f"User can't access the request."
     if "org_id" in body:
         org = get_org(body["org_id"])
         if not org:
