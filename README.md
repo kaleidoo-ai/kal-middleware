@@ -34,34 +34,30 @@ Here's an example of how to apply the `firebase_jwt_authenticated` decorator:
 ```python
 from kal_middleware.jwt import firebase_jwt_authenticated
 from typing import List
+from utils import get_org, get_user_by_fb_uid
 
-# Define a function to retrieve the user's role based on their user ID
-def get_user_capabilities(user_id: str):
-    # Implement your logic to retrieve the user's capabilities
-    # If the user not found, return "".
-
-    # Example - the user can access the get action in example service only.
-    example_capabilities = [{
-        "service": "example_service",
-        "action": "get"
-    }]
-    return example_capabilities
+async def get_user(firebase_uid):
+    user = await get_user_by_fb_uid(firebase_uid)
+    return user
 
 # if there is specific variable in the body that needed checks of who access its data only
-def check_access(firebase_uid: str, body: dict, user_capabilities_list: List):
+async def check_access(user: dict, body: dict):
     # check in the db the user and his parameters
-    # for example if in the db the user with that exactly firebase_uid is:
-    user = {
-        "id": "333444",
-        "firebase_uid": "12345",
-        "org_id": "12345"
-    }
-    if body["org_id"] == user["org_id"]:
-        return True, user
+    # for example:
+    capabilities = user.get("capabilities")
+    if "capability_id" in body:
+        access =  any(capability for capability in capabilities if capability.get("id") == body["capability_id"] )
+        if not access:
+            return False, f"User cant access the request."
+    if "org_id" in body:
+        org = get_org(body["org_id"])
+        if not org:
+            return False, f"Org not found"
+        return True, {"org": org}
     return False, f"User {user.get('id')} from another organization then the one that was requested."
 
 @app.get("/your-route/<service>/<action>")
-@firebase_jwt_authenticated(get_user_capabilities, check_access)
+@firebase_jwt_authenticated(get_user, check_access)
 async def your_route_function(
         request: Request = None,
         service: Union[str, None] = None,
@@ -72,7 +68,7 @@ async def your_route_function(
 
 # Or - if there is no need to check for specific data in the body
 @app.get("/your-route-without-check-access/<service>/<action>")
-@firebase_jwt_authenticated(get_user_capabilities)
+@firebase_jwt_authenticated(get_user)
 async def your_route_function_without_check_access(
         request: Request = None,
         service: Union[str, None] = None,
