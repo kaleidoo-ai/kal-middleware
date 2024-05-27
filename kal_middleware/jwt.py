@@ -59,7 +59,7 @@ def firebase_jwt_authenticated(
 
             request.state.user = user
             for key, value in objects.items():
-                request.state["key"] = value
+                setattr(request.state, key, value)
 
             # Process the request
             response = await func(request, *args, **kwargs)
