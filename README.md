@@ -34,7 +34,7 @@ Here's an example of how to apply the `firebase_jwt_authenticated` decorator:
 ```python
 from kal_middleware.jwt import firebase_jwt_authenticated
 from typing import List
-from utils import get_org, get_user_by_fb_uid
+from utils import get_org, get_user_by_fb_uid, get_capability_by_service_action
 
 async def get_user(firebase_uid):
     user = await get_user_by_fb_uid(firebase_uid)
@@ -55,6 +55,11 @@ async def check_access(user: dict, body: dict):
             return False, f"Org not found"
         return True, {"org": org}
     return False, f"User {user.get('id')} from another organization then the one that was requested."
+
+
+async def get_capability(service, action):
+    capability = await get_capability_by_service_action(service, action)
+    return capability
 
 @app.get("/your-route/<service>/<action>")
 @firebase_jwt_authenticated(get_user, check_access)
