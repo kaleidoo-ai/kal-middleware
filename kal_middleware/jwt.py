@@ -8,8 +8,9 @@ from typing import Callable, Optional, Any, Awaitable, Tuple
 default_app = firebase_admin.initialize_app()
 
 def firebase_jwt_authenticated(
-    get_user_capabilities: Callable[[str], Any],
-    check_access: Optional[Callable[[str, Any, list], Awaitable[Tuple[bool, dict]]]] = None,
+    get_user_by_fb_uid: Callable[[str], Any],
+    get_capability: Callable[[str, str], Any],
+    check_access: Optional[Callable[[dict, Any], Awaitable[Tuple[bool, dict]]]] = None,
 ):
     def decorator(func: Callable) -> Callable:
         @wraps(func)
@@ -30,14 +31,14 @@ def firebase_jwt_authenticated(
             # verify that the service and action exists in the config map
             service = kwargs.get('service')
             action = kwargs.get('action')
-            user = None
+            objects = None
 
             # verify that the user has the permission to execute the request
             user_uid = decoded_token["uid"]
-            user_capabilities = await get_user_capabilities(user_uid)
-            access = any(
-                capability["service"] == service and capability["action"] == action for capability in user_capabilities
-            )
+            user = await get_user_by_fb_uid(user_uid)
+            capabilities = user.get("capabilities")
+            capability = await get_capability(service, action)
+            access = capability and capability.get("id") in capabilities
 
             if not access:
                 return Response(
@@ -49,17 +50,16 @@ def firebase_jwt_authenticated(
             if request.method in ["POST", "PUT"]:
                 if check_access:
                     body = await request.json()
-                    access, user  = await check_access(user_uid, body, user_capabilities)
+                    access, objects  = await check_access(user, body)
                     if not access:
                         return Response(
                             status_code=status.HTTP_403_FORBIDDEN,
-                            content=f"User not permitted to perform this action. reason: {user}",
+                            content=f"User not permitted to perform this action. reason: {objects}",
                         )
 
-            request.state.uid = user_uid  # Attach the Firebase id to the request state for later use.
-            if user:
-                request.state.user = user
-            request.state.user_capabilities = user_capabilities
+            request.state.user = user
+            for key, value in objects.items():
+                request.state["key"] = value
 
             # Process the request
             response = await func(request, *args, **kwargs)
