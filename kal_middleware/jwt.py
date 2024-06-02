@@ -31,7 +31,7 @@ def firebase_jwt_authenticated(
             # verify that the service and action exists in the config map
             service = kwargs.get('service')
             action = kwargs.get('action')
-            objects = None
+            objects = {}
 
             # verify that the user has the permission to execute the request
             user_uid = decoded_token["uid"]
