@@ -49,7 +49,17 @@ def firebase_jwt_authenticated(
             # if the request has body and there is a need to verify the user access to the elements - verify it
             if request.method in ["POST", "PUT"]:
                 if check_access:
-                    body = await request.json()
+                    # Determine content type and parse accordingly
+                    if request.headers.get('Content-Type') == 'application/json':
+                        body = await request.json()
+                    elif 'multipart/form-data' in request.headers.get('Content-Type'):
+                        body = await request.form()
+                        body = dict(body)
+                    else:
+                        return Response(
+                            status_code=status.HTTP_401_UNAUTHORIZED,
+                            content=f"Headers not allowed"
+                        )
                     access, objects  = await check_access(user, body)
                     if not access:
                         return Response(
