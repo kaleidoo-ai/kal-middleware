@@ -1,8 +1,11 @@
 from functools import wraps
 from fastapi import Request, status
 from starlette.responses import Response
+import firebase_admin
 from firebase_admin import auth
 from typing import Callable, Optional, Any, Awaitable, Tuple
+
+default_app = firebase_admin.initialize_app()
 
 def firebase_jwt_authenticated(
     get_user_by_fb_uid: Callable[[str], Any],
