@@ -85,3 +85,4 @@ nav:
           - kal_middleware module: kal_middleware.md
           - jwt module: jwt.md
           - sts module: sts.md
+          - firebaseApi: firebaseApi.md

@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.0.3 - Date
+## v1.0.4 - Date
 
 **Improvement**:
 
