@@ -2,7 +2,6 @@
 __author__ = """Bar Lander"""
 __email__ = "barh@kaleidoo.ai"
 __version__ = "1.0.4"
-from . import jwt, sts, firebaseApi
 import os
 from dotenv import load_dotenv
 
