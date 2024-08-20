@@ -3,3 +3,4 @@ fastapi
 google-auth
 python-dotenv
 kal-utils
+python-jose
