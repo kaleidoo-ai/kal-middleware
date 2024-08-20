@@ -40,3 +40,18 @@ def reset_password(email: str):
     except Exception as e:
         print(f"Error sending password reset email: {e}")
         raise
+
+
+def get_all_users_from_firebase():
+    try:
+        all_users = []
+        page = auth.list_users()
+        while page:
+            for user in page.users:
+                all_users.append(user)
+            # Get next batch of users, if there are more
+            page = page.get_next_page()
+        return all_users
+    except Exception as e:
+        print(f"Error getting users from Firebase: {e}")
+        return None
