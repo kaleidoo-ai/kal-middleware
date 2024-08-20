@@ -157,7 +157,7 @@ provider_function = {
     "keycloak": decode_keycloak_token
 }
 
-def authentication(
+def authenticate(
     get_user_by_uid: Callable[[str], Any],
     get_capability: Callable[[str, str, str], Any],
     check_access: Optional[Callable[[dict, Any], Awaitable[Tuple[bool, dict]]]] = None,
