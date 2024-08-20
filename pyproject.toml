@@ -1,6 +1,6 @@
 [project]
 name = "kal-middleware"
-version = "1.0.5"
+version = "1.0.4"
 dynamic = [
     "dependencies",
 ]
@@ -52,7 +52,7 @@ universal = true
 
 
 [tool.bumpversion]
-current_version = "1.0.5"
+current_version = "1.0.4"
 commit = true
 tag = true
 
