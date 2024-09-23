@@ -8,22 +8,40 @@ from .keycloakSchemas import UserPayload
 import requests
 import os
 
-os.environ["KEYCLOAK_APPLICATION_CREDENTIALS"] = keycloak_config.KEYCLOAK_APPLICATION_CREDENTIALS
-settings = keycloak_config.load_keycloak_credentials(keycloak_config.decoded_keycloak_credentials)
+# Initially set settings and keycloak_openid to None
+settings = None
+keycloak_openid = None
 
-# Set up OAuth2 and Keycloak clients
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=settings.token_url)
+# Set up OAuth2 (the tokenUrl can be set later when settings are initialized)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl='None')
 
-keycloak_openid = KeycloakOpenID(
-    server_url=settings.server_url,
-    client_id=settings.client_id,
-    realm_name=settings.realm,
-    client_secret_key=settings.client_secret,
-    verify=True
-)
+
+def get_settings():
+    global settings
+    if settings is None:
+        os.environ["KEYCLOAK_APPLICATION_CREDENTIALS"] = keycloak_config.KEYCLOAK_APPLICATION_CREDENTIALS
+        settings = keycloak_config.load_keycloak_credentials(keycloak_config.decoded_keycloak_credentials)
+        # Update the tokenUrl for oauth2_scheme after settings are loaded
+        oauth2_scheme.model.tokenUrl = settings.token_url
+    return settings
+
+
+def get_keycloak_openid():
+    global keycloak_openid
+    if keycloak_openid is None:
+        settings = get_settings()
+        keycloak_openid = KeycloakOpenID(
+            server_url=settings.server_url,
+            client_id=settings.client_id,
+            realm_name=settings.realm,
+            client_secret_key=settings.client_secret,
+            verify=True
+        )
+    return keycloak_openid
 
 
 async def get_idp_public_key():
+    keycloak_openid = get_keycloak_openid()
     return (
         "-----BEGIN PUBLIC KEY-----\n"
         f"{keycloak_openid.public_key()}\n"
@@ -33,6 +51,8 @@ async def get_idp_public_key():
 
 async def get_payload(token: str = Depends(oauth2_scheme)) -> dict:
     try:
+        keycloak_openid = get_keycloak_openid()
+        settings = get_settings()
         return keycloak_openid.decode_token(
             token,
             key=await get_idp_public_key(),
@@ -70,6 +90,7 @@ async def get_user_info(token: str = Depends(oauth2_scheme)) -> UserPayload:
 
 
 def check_entitlement(token: str, resource_id: str) -> bool:
+    settings = get_settings()
     token_url = f"{settings.server_url}/realms/{settings.realm}/protocol/openid-connect/token"
     headers = {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -106,10 +127,8 @@ def authenticate(
             key_user = await get_user_info(token)
             service = kwargs.get("service")
             action = kwargs.get("action")
-            # if not check_entitlement(token, resource_uri):
-            #     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
-            # verify that the user has the permission to execute the request
+            # Verify that the user has the permission to execute the request
             user = await get_user_by_uid(key_user.id)
             if not user:
                 raise HTTPException(
@@ -119,7 +138,7 @@ def authenticate(
 
             if request.headers.get('Content-Type') == 'application/json':
                 body = await request.json()
-            elif 'multipart/form-data' in request.headers.get('Content-Type'):
+            elif 'multipart/form-data' in request.headers.get('Content-Type', ''):
                 body = await request.form()
                 body = dict(body)
             else:
@@ -148,14 +167,14 @@ def authenticate(
                     detail=f"The user cannot access {service}/{action} in {product}."
                 )
 
-            # if the request has body and there is a need to verify the user access to the elements - verify it
+            # If the request has a body and there is a need to verify the user's access to the elements - verify it
             if request.method in ["POST", "PUT"]:
                 if check_access:
                     access, objects = await check_access(user, body)
                     if not access:
                         raise HTTPException(
                             status_code=status.HTTP_403_FORBIDDEN,
-                            detail=f"User not permitted to perform this action. reason: {objects}",
+                            detail=f"User not permitted to perform this action. Reason: {objects}",
                         )
 
             request.state.user = user
