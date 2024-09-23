@@ -4,7 +4,7 @@ from functools import wraps
 from fastapi.security import OAuth2PasswordBearer
 from keycloak import KeycloakOpenID
 from .keycloakConfig import keycloak_config
-from keycloakSchemas import UserPayload
+from .keycloakSchemas import UserPayload
 import requests
 import os
 

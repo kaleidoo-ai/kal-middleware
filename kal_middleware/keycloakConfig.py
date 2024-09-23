@@ -1,4 +1,4 @@
-from keycloakSchemas import AuthConfigurations
+from .keycloakSchemas import AuthConfigurations
 import json
 import os
 import base64
