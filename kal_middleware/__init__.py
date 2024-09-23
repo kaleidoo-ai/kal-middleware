@@ -5,7 +5,7 @@ __version__ = "1.0.7"
 import os
 from dotenv import load_dotenv
 
-from kal_middleware import keycloakAuth, keycloakSchemas, keycloakConfig, firebaseApi, jwt, sts
+from kal_middleware import keycloakAuth, keycloakSchemas, keycloakConfig
 # Load environment variables from .env file
 load_dotenv()
 
