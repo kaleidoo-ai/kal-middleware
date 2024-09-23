@@ -4,7 +4,7 @@ __email__ = "barh@kaleidoo.ai"
 __version__ = "1.0.7"
 import os
 from dotenv import load_dotenv
-from kal_middleware import keycloakAuth
+
 # Load environment variables from .env file
 load_dotenv()
 
