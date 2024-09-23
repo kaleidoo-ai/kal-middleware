@@ -86,3 +86,4 @@ nav:
           - jwt module: jwt.md
           - sts module: sts.md
           - firebaseApi: firebaseApi.md
+          - keycloakAuth: keycloakAuth.md
