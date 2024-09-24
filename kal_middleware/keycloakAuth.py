@@ -7,6 +7,7 @@ from .keycloakConfig import keycloak_config
 from .keycloakSchemas import UserPayload
 import requests
 import os
+import jwt
 
 # Initially set settings and keycloak_openid to None
 settings = None
@@ -51,21 +52,34 @@ async def get_idp_public_key():
 
 async def get_payload(token: str = Depends(oauth2_scheme)) -> dict:
     try:
-        keycloak_openid = get_keycloak_openid()
+        key = await get_idp_public_key()
         settings = get_settings()
-        return keycloak_openid.decode_token(
+        audience = settings.client_id
+
+        decoded_token = jwt.decode(
             token,
-            key=await get_idp_public_key(),
-            aud=settings.client_id,
-            options={
-                "verify_signature": True,
-                "exp": True,
-            },
+            key=key,
+            algorithms=['RS256'],
+            audience=audience,
+            leeway=0  # Ensure no leeway is applied
         )
-    except Exception as e:
+        return decoded_token
+    except jwt.ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Token verification failed: {str(e)}",
+            detail="Token has expired",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    except jwt.InvalidAudienceError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid audience: {str(e)}",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    except jwt.InvalidTokenError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid token: {str(e)}",
             headers={"WWW-Authenticate": "Bearer"}
         )
 
