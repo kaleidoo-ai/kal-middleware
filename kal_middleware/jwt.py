@@ -1,7 +1,6 @@
+import json
 from functools import wraps
-from itertools import product
-
-from fastapi import Request, status
+from fastapi import Request, WebSocket, status
 from fastapi.security import HTTPBearer
 from starlette.responses import Response
 import firebase_admin
@@ -255,6 +254,151 @@ def authenticate(
             # Process the request
             response = await func(request, *args, **kwargs)
             return response
+
+        return decorated_function
+
+    return decorator
+
+
+def websocket_authenticate(
+    get_user_by_uid: Callable[[str], Any],
+    get_capability: Callable[[str, str, str], Any],
+    check_access: Optional[Callable[[dict, Any], Awaitable[Tuple[bool, dict]]]] = None,
+    product_check: Optional[bool] = True
+):
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        async def decorated_function(websocket: WebSocket, *args, **kwargs):
+            # Determine the provider
+            provider = os.getenv('PROVIDER', 'firebase').lower()
+
+            # verify the token exists and validate with the appropriate provider
+            header = websocket.headers.get("Authorization", None)
+            if header:
+                token = header.split(" ")[1]
+                try:
+                    if provider in provider_function.keys():
+                        decoded_token, user_uid, error = provider_function[provider](token)
+                        if error is not None:
+                            await websocket.send_json(
+                                {
+                                    "status_code": status.HTTP_403_FORBIDDEN,
+                                    "message": f"Error with authentication: {error}",
+                                }
+                            )
+                            await websocket.close()
+                            return
+                    else:
+                        await websocket.send_json(
+                            {
+                                "status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+                                "message": f"Invalid authentication provider configured: {provider}",
+                            }
+                        )
+                        await websocket.close()
+                        return
+                except Exception as e:
+                    await websocket.send_json(
+                        {
+                            "status_code": status.HTTP_403_FORBIDDEN,
+                            "message": f"Error with authentication: {e}",
+                        }
+                    )
+                    await websocket.close()
+                    return
+            else:
+                await websocket.send_json(
+                    {
+                        "status_code": status.HTTP_401_UNAUTHORIZED,
+                        "message": "Error, token not found.",
+                    }
+                )
+                await websocket.close()
+                return
+
+            # verify that the service and action exists in the config map
+            service = kwargs.get('service')
+            action = kwargs.get('action')
+            objects = {}
+
+            # verify that the user has the permission to execute the request
+            user = await get_user_by_uid(user_uid)
+
+            if not user:
+                await websocket.send_json(
+                    {
+                        "status_code": status.HTTP_404_NOT_FOUND,
+                        "message": "User not found",
+                    }
+                )
+                await websocket.close()
+                return
+
+            try:
+                # Receive the initial message from the WebSocket
+                message = await websocket.receive_text()
+                body = json.loads(message)
+
+                if product_check:
+                    product = body.get("product")
+                    if product is None:
+                        await websocket.send_json(
+                            {
+                                "status_code": status.HTTP_401_UNAUTHORIZED,
+                                "message": "Product type is missing from the body",
+                            }
+                        )
+                        await websocket.close()
+                        return
+                else:
+                    product = "kalsense"
+
+                capability = await get_capability(service, action, product)
+                capabilities = [
+                    cap.get("id")
+                    for cap in user.get("capabilities").get(product, [])
+                ]
+                access = capability and (capability.get("id") in capabilities)
+
+                if not access:
+                    await websocket.send_json(
+                        {
+                            "status_code": status.HTTP_403_FORBIDDEN,
+                            "message": f"The user cannot access {service}/{action} in {product}.",
+                        }
+                    )
+                    await websocket.close()
+                    return
+
+                # Check additional access based on request body (if applicable)
+                if check_access:
+                    access, objects = await check_access(user, body)
+                    if not access:
+                        await websocket.send_json(
+                            {
+                                "status_code": status.HTTP_403_FORBIDDEN,
+                                "message": f"User not permitted to perform this action. reason: {objects}",
+                            }
+                        )
+                        await websocket.close()
+                        return
+
+                # Set user and any additional objects in websocket state (as attributes)
+                websocket.state.user = user
+                for key, value in objects.items():
+                    setattr(websocket.state, key, value)
+
+                # Proceed with the WebSocket handler
+                return await func(websocket, *args, **kwargs)
+
+            except Exception as e:
+                await websocket.send_json(
+                    {
+                        "status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        "message": f"Error processing WebSocket request: {str(e)}",
+                    }
+                )
+                await websocket.close()
 
         return decorated_function
 
