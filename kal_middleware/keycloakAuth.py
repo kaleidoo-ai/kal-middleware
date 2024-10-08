@@ -20,7 +20,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl='None')
 def get_settings():
     global settings
     if settings is None:
-        os.environ["KEYCLOAK_APPLICATION_CREDENTIALS"] = keycloak_config.KEYCLOAK_APPLICATION_CREDENTIALS
+        os.environ["KEYCLOAK_CREDENTIALS"] = keycloak_config.KEYCLOAK_CREDENTIALS
         settings = keycloak_config.load_keycloak_credentials(keycloak_config.decoded_keycloak_credentials)
         # Update the tokenUrl for oauth2_scheme after settings are loaded
         oauth2_scheme.model.tokenUrl = settings.token_url

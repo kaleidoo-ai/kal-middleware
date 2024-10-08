@@ -7,7 +7,7 @@ import tempfile
 
 class KeycloakConfig:
     ENVIRONMENT = os.getenv("ENVIRONMENT", "local")
-    KEYCLOAK_APPLICATION_CREDENTIALS = os.getenv("KEYCLOAK_APPLICATION_CREDENTIALS", "keycloak_credentials.json")
+    KEYCLOAK_CREDENTIALS = os.getenv("KEYCLOAK_CREDENTIALS", "keycloak_credentials.json")
 
     @staticmethod
     def load_keycloak_credentials(credentials_json=None) -> AuthConfigurations:
@@ -40,16 +40,16 @@ class KeycloakConfig:
     @property
     def decoded_keycloak_credentials(self):
         if self.ENVIRONMENT == "local":
-            return self.KEYCLOAK_APPLICATION_CREDENTIALS
+            return self.KEYCLOAK_CREDENTIALS
         try:
-            decoded_str = base64.b64decode(self.KEYCLOAK_APPLICATION_CREDENTIALS).decode('utf-8')
+            decoded_str = base64.b64decode(self.KEYCLOAK_CREDENTIALS).decode('utf-8')
             with tempfile.NamedTemporaryFile(delete=False, suffix='.json') as temp_file:
                 temp_file.write(decoded_str.encode('utf-8'))
                 temp_path = temp_file.name
             return temp_path
 
         except (base64.binascii.Error, ValueError):
-            return self.KEYCLOAK_APPLICATION_CREDENTIALS
+            return self.KEYCLOAK_CREDENTIALS
 
 
 keycloak_config = KeycloakConfig()
