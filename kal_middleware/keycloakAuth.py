@@ -60,7 +60,7 @@ async def get_payload(token: str = Depends(oauth2_scheme)) -> dict:
             token,
             key=key,
             algorithms=['RS256'],
-            audience=audience,
+            # audience=audience,
             leeway=0  # Ensure no leeway is applied
         )
         return decoded_token
