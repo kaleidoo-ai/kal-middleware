@@ -54,13 +54,13 @@ async def get_payload(token: str = Depends(oauth2_scheme)) -> dict:
     try:
         key = await get_idp_public_key()
         settings = get_settings()
-        audience = settings.client_id
+        audience = 'account'
 
         decoded_token = jwt.decode(
             token,
             key=key,
             algorithms=['RS256'],
-            # audience=audience,
+            audience=audience,
             leeway=0  # Ensure no leeway is applied
         )
         return decoded_token
