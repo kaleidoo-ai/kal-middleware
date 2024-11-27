@@ -75,7 +75,7 @@ def decode_keycloak_token(token):
 def firebase_jwt_authenticated(
     get_user_by_fb_uid: Callable[[str], Any],
     get_capability: Callable[[str, str], Any],
-    check_access: Optional[Callable[[dict, Any], Awaitable[Tuple[bool, dict]]]] = None,
+    check_access: Optional[Callable[[dict, Any], Awaitable[Tuple[bool, dict, any]]]] = None,
 ):
     def decorator(func: Callable) -> Callable:
         @wraps(func)
@@ -131,12 +131,18 @@ def firebase_jwt_authenticated(
                             status_code=status.HTTP_401_UNAUTHORIZED,
                             content=f"Headers not allowed"
                         )
-                    access, objects  = await check_access(user, body)
+                    access, objects, status_code  = await check_access(user, body)
                     if not access:
-                        return Response(
-                            status_code=status.HTTP_403_FORBIDDEN,
-                            content=f"User not permitted to perform this action. reason: {objects}",
-                        )
+                        if status_code:
+                            return Response(
+                                status_code=status_code,
+                                content=f"User not permitted to perform this action. Reason: {objects}",
+                            )
+                        else:
+                            return Response(
+                                status_code=status.HTTP_403_FORBIDDEN,
+                                content=f"User not permitted to perform this action. Reason: {objects}",
+                            )
 
             request.state.user = user
             for key, value in objects.items():
@@ -159,7 +165,7 @@ provider_function = {
 def authenticate(
     get_user_by_uid: Callable[[str], Any],
     get_capability: Callable[[str, str, str], Any],
-    check_access: Optional[Callable[[dict, Any], Awaitable[Tuple[bool, dict]]]] = None,
+    check_access: Optional[Callable[[dict, Any], Awaitable[Tuple[bool, dict, any]]]] = None,
     product_check: Optional[bool] = True
 ):
     def decorator(func: Callable) -> Callable:
@@ -240,12 +246,18 @@ def authenticate(
             # if the request has body and there is a need to verify the user access to the elements - verify it
             if request.method in ["POST", "PUT"]:
                 if check_access:
-                    access, objects  = await check_access(user, body)
+                    access, objects, status_code = await check_access(user, body)
                     if not access:
-                        return Response(
-                            status_code=status.HTTP_403_FORBIDDEN,
-                            content=f"User not permitted to perform this action. reason: {objects}",
-                        )
+                        if status_code:
+                            return Response(
+                                status_code=status_code,
+                                content=f"User not permitted to perform this action. Reason: {objects}",
+                            )
+                        else:
+                            return Response(
+                                status_code=status.HTTP_403_FORBIDDEN,
+                                content=f"User not permitted to perform this action. Reason: {objects}",
+                            )
 
             request.state.user = user
             for key, value in objects.items():
@@ -263,7 +275,7 @@ def authenticate(
 def websocket_authenticate(
         get_user_by_uid: Callable[[str], Any],
         get_capability: Callable[[str, str, str], Any],
-        check_access: Optional[Callable[[dict, Any], Awaitable[Tuple[bool, dict]]]] = None,
+        check_access: Optional[Callable[[dict, Any], Awaitable[Tuple[bool, dict, any]]]] = None,
         product_check: Optional[bool] = True
 ):
     def decorator(func: Callable) -> Callable:
@@ -349,14 +361,18 @@ def websocket_authenticate(
                 websocket.state.body = message_data
                 # Optional: Additional access checks using check_access callback
                 if check_access:
-                    access, objects = await check_access(user, message_data)
+                    access, objects, status_code = await check_access(user, message_data)
                     if not access:
-                        await websocket.send_json({
-                            "status_code": status.HTTP_403_FORBIDDEN,
-                            "message": f"Access denied: {objects}",
-                        })
-                        await websocket.close()
-                        return
+                        if status_code:
+                            return Response(
+                                status_code=status_code,
+                                content=f"User not permitted to perform this action. Reason: {objects}",
+                            )
+                        else:
+                            return Response(
+                                status_code=status.HTTP_403_FORBIDDEN,
+                                content=f"User not permitted to perform this action. Reason: {objects}",
+                            )
 
                     # Attach additional data to websocket state
                     for key, value in objects.items():

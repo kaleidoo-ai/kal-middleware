@@ -114,7 +114,7 @@ def check_entitlement(token: str, resource_id: str) -> bool:
 def authenticate(
         get_user_by_uid: Callable[[str], Any],
         get_capability: Callable[[str, str, str], Any],
-        check_access: Optional[Callable[[dict, Any], Awaitable[Tuple[bool, dict]]]] = None,
+        check_access: Optional[Callable[[dict, Any], Awaitable[Tuple[bool, dict, any]]]] = None,
         product_check: Optional[bool] = True
 ):
     def decorator(func):
@@ -170,12 +170,18 @@ def authenticate(
             # If the request has a body and there is a need to verify the user's access to the elements - verify it
             if request.method in ["POST", "PUT"]:
                 if check_access:
-                    access, objects = await check_access(user, body)
+                    access, objects, status_code = await check_access(user, body)
                     if not access:
-                        raise HTTPException(
-                            status_code=status.HTTP_403_FORBIDDEN,
-                            detail=f"User not permitted to perform this action. Reason: {objects}",
-                        )
+                        if status_code:
+                            raise HTTPException(
+                                status_code=status_code,
+                                detail=f"User not permitted to perform this action. Reason: {objects}",
+                            )
+                        else:
+                            raise HTTPException(
+                                status_code=status.HTTP_403_FORBIDDEN,
+                                detail=f"User not permitted to perform this action. Reason: {objects}",
+                            )
 
             request.state.user = user
             for key, value in objects.items():
