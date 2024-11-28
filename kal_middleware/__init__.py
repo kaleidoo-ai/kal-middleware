@@ -1,7 +1,7 @@
 """Top-level package for kal-middleware."""
 __author__ = """Bar Lander"""
 __email__ = "barh@kaleidoo.ai"
-__version__ = "2.0.5.1"
+__version__ = "2.0.5.2"
 
 import os
 from dotenv import load_dotenv

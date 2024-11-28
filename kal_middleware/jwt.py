@@ -80,6 +80,19 @@ def firebase_jwt_authenticated(
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def decorated_function(request: Request, *args, **kwargs):
+
+            if request.headers is None:
+                return Response(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    content="Headers required"
+                )
+
+            if request.headers.get('Content-Type') is None:
+                return Response(
+                    status_code=status.HTTP_403_UNAUTHORIZED,
+                    content=f"Content-Type header required"
+                )
+
             # verify the token exists and validate with firebase
             header = request.headers.get("Authorization", None)
             if header:
@@ -173,6 +186,18 @@ def authenticate(
         async def decorated_function(request: Request, *args, **kwargs):
             # Determine which provider to use
             provider = os.getenv('PROVIDER', 'firebase').lower()
+
+            if request.headers is None:
+                return Response(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    content="Headers required"
+                )
+
+            if request.headers.get('Content-Type') is None:
+                return Response(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    content=f"Content-Type header required"
+                )
 
             # verify the token exists and validate with the appropriate provider
             header = request.headers.get("Authorization", None)
