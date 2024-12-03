@@ -151,10 +151,22 @@ def authenticate(
                 )
 
             if request.headers.get('Content-Type') == 'application/json':
-                body = await request.json()
+                try:
+                    body = await request.json()
+                except Exception as e:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Error parsing JSON: {e}, please insert a valid JSON"
+                    )
             elif 'multipart/form-data' in request.headers.get('Content-Type', ''):
-                body = await request.form()
-                body = dict(body)
+                try:
+                    body = await request.form()
+                    body = dict(body)
+                except Exception as e:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Error parsing form data: {e}, please insert a valid multipart/form-data"
+                    )
             else:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,

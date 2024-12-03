@@ -135,10 +135,22 @@ def firebase_jwt_authenticated(
                 if check_access:
                     # Determine content type and parse accordingly
                     if request.headers.get('Content-Type') == 'application/json':
-                        body = await request.json()
+                        try:
+                            body = await request.json()
+                        except Exception as e:
+                            return Response(
+                                status_code=status.HTTP_400_BAD_REQUEST,
+                                content=f"Error parsing JSON: {e}, please insert a valid JSON"
+                            )
                     elif 'multipart/form-data' in request.headers.get('Content-Type'):
-                        body = await request.form()
-                        body = dict(body)
+                        try:
+                            body = await request.form()
+                            body = dict(body)
+                        except Exception as e:
+                            return Response(
+                                status_code=status.HTTP_400_BAD_REQUEST,
+                                content=f"Error parsing form data: {e}, please insert a valid multipart/form-data"
+                            )
                     else:
                         return Response(
                             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -238,10 +250,22 @@ def authenticate(
                 )
 
             if request.headers.get('Content-Type') == 'application/json':
-                body = await request.json()
+                try:
+                    body = await request.json()
+                except Exception as e:
+                    return Response(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        content=f"Error parsing JSON: {e}, please insert a valid JSON"
+                    )
             elif 'multipart/form-data' in request.headers.get('Content-Type'):
-                body = await request.form()
-                body = dict(body)
+                try:
+                    body = await request.form()
+                    body = dict(body)
+                except Exception as e:
+                    return Response(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        content=f"Error parsing form data: {e}, please insert a valid multipart/form-data"
+                    )
             else:
                 return Response(
                     status_code=status.HTTP_401_UNAUTHORIZED,
