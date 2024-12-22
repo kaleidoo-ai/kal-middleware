@@ -13,7 +13,6 @@ click==8.1.7
 colorama==0.4.6
 cryptography==42.0.5
 deprecation==2.1.0
-fastapi==0.110.0
 h11==0.14.0
 idna==3.6
 jwcrypto==1.5.6
@@ -21,7 +20,7 @@ packaging==23.2
 pycparser==2.21
 pydantic==2.6.3
 pydantic_core==2.16.3
-python-dotenv==1.0.1
+python-dotenv
 python-keycloak==3.9.1
 requests==2.31.0
 requests-toolbelt==1.0.0
