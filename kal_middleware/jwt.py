@@ -213,6 +213,7 @@ def authenticate(
 
             # verify the token exists and validate with the appropriate provider
             header = request.headers.get("Authorization", None)
+            token = None
             if header:
                 token = header.split(" ")[1]
                 try:
@@ -309,6 +310,7 @@ def authenticate(
                             )
 
             request.state.user = user
+            request.state.token = token
             for key, value in objects.items():
                 setattr(request.state, key, value)
 

@@ -210,6 +210,7 @@ def authenticate(
                             )
 
             request.state.user = user
+            request.state.token = token
             for key, value in objects.items():
                 setattr(request.state, key, value)
 
